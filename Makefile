@@ -13,7 +13,8 @@ Q = @
 all:
 	for f in ${BIN_BASE}; do sed 's/@VERSION@/'$(VERSION)'/' $$f.in > $$f; done
 
-install-base:
+install-base: 
+	install -dm0755 $(DESTDIR)$(BINDIR)
 	install -m0755 ${BIN_BASE} $(DESTDIR)$(BINDIR)
 	
 uninstall-base:
