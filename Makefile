@@ -24,3 +24,5 @@ uninstall: uninstall-base
 
 clean:
 	$(RM) ${BIN_BASE}
+
+.PHONY: install-base uninstall-base install uninstall clean
