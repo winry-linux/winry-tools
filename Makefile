@@ -19,6 +19,8 @@ Q = @
 edit = sed -e "s|@version@|${Version}|g" \
 	-e "s|@libdir[@]|$(DESTDIR)$(PREFIX)/lib/winry-tools|g"
 
+all: $(BIN)	
+
 %: %.in Makefile
 	$(Q)echo "GEN $@"
 	$(RM) "$@"
