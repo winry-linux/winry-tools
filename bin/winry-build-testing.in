@@ -48,7 +48,7 @@ fi
 echo "Copying over makepkg.conf and pacman.conf"
 cp /etc/pacman.conf $CHROOT/root/etc/pacman.conf
 cp /etc/makepkg.conf $CHROOT/root/etc/makepkg.conf
-    
+
 #Build the package
 echo "Building package"
 makechrootpkg -c -u -r $CHROOT
