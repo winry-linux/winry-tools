@@ -17,6 +17,9 @@
 #   You should have received a copy of the GNU General Public License
 #   along with Winry-Tools. If not, see <http://www.gnu.org/licenses/>.
 
+#To be replaced with Make
+LIBDIR='@libdir@'
+
 #Import the util-msg library
 import ${LIBDIR}/util.sh
 

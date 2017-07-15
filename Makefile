@@ -4,26 +4,43 @@ NAME = winry-buildtools
 PREFIX ?= /usr
 BINDIR = $(PREFIX)/bin
 
-BIN_BASE = \
-	bin/winry-build-testing
+BIN = \
+	bin/winry-build-testing \
+	bin/signfile \
+	bin/signpkgs
+	
+LIBS = \
+	lib/util.sh \
+	lib/util-msg.sh
 
 RM = rm -f
 Q = @
 
-all:
-	for f in ${BIN_BASE}; do sed 's/@VERSION@/'$(VERSION)'/' $$f.in > $$f; done
+edit = sed -e "s|@version@|${Version}|g" \
+	-e "s|@libdir[@]|$(DESTDIR)$(PREFIX)/lib/winry-tools|g"
+
+%: %.in Makefile
+	$(Q)echo "GEN $@"
+	$(RM) "$@"
+	m4 -P $@.in | $(edit) >$@
+	chmod a-w "$@"
+	chmod +x "$@"
 
 install-base: 
 	install -dm0755 $(DESTDIR)$(BINDIR)
-	install -m0755 ${BIN_BASE} $(DESTDIR)$(BINDIR)
+	install -m0755 ${BIN} $(DESTDIR)$(BINDIR)
+	
+	install -dm0755 $(DESTDIR)$(PREFIX)/lib/winry-tools
+	install -m0644 ${LIBS} $(DESTDIR)$(PREFIX)/lib/winry-tools
 	
 uninstall-base:
-	for f in ${BIN_BASE}; do $(RM) $(DESTDIR)/$$f; done
+	for f in ${BIN}; do $(RM) $(DESTDIR)/$$f; done
+	for f in ${LIBS}; do $(RM) $(DESTDIR)$(PREFIX)/lib/winry-tools/$$f; done
 	
 install: install-base
 uninstall: uninstall-base
 
 clean:
-	$(RM) ${BIN_BASE}
+	$(RM) ${BIN}
 
 .PHONY: install-base uninstall-base install uninstall clean
