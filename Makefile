@@ -10,8 +10,9 @@ BIN = \
 	bin/signpkgs
 	
 LIBS = \
-	lib/util.sh \
-	lib/util-msg.sh
+	lib/util \
+	lib/util-msg \
+	lib/util-pkg
 
 RM = rm -f
 Q = @
@@ -19,7 +20,7 @@ Q = @
 edit = sed -e "s|@version@|${Version}|g" \
 	-e "s|@libdir[@]|$(DESTDIR)$(PREFIX)/lib/winry-tools|g"
 
-all: $(BIN)	
+all: $(BIN) $(LIBS)
 
 %: %.in Makefile
 	$(Q)echo "GEN $@"
@@ -44,5 +45,6 @@ uninstall: uninstall-base
 
 clean:
 	$(RM) ${BIN}
+	$(RM) ${LIBS}
 
 .PHONY: install-base uninstall-base install uninstall clean

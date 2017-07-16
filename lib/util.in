@@ -17,20 +17,30 @@
 #   You should have received a copy of the GNU General Public License
 #   along with Winry-Tools. If not, see <http://www.gnu.org/licenses/>.
 
-#To be replaced with Make
-LIBDIR='@libdir@'
+#Create a variable for the user's home directory
+load_user_info(){
+    OWNER=${SUDO_USER:-$USER}
 
-#Import the needed libraries
-source ${LIBDIR}/util-msg
-
-#Display help, make sure needed variables are present
-if [[ $# -gt 0 ]]; then
-    if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
-        header
-        echo "Sign all the packages in the current directory"
-        cleanup 0
+    if [[ -n $SUDO_USER ]]; then
+        eval "USER_HOME=~$SUDO_USER"
+    else
+        USER_HOME=$HOME
     fi
-fi
+}
 
-#Recursively sign all packages
-find $PWD -maxdepth 1 -name '*.pkg.tar.xz' -exec signfile {} \;
+#Load specific variables from file
+load_vars() {
+    local var
+
+    [[ -f $1 ]] || return 1
+
+    for var in {SRC,SRCPKG,PKG,LOG}DEST MAKEFLAGS PACKAGER CARCH GPGKEY; do
+        [[ -z ${!var} ]] && eval $(grep -a "^${var}=" "$1")
+    done
+
+    return 0
+}
+
+verify_root() {
+    [[ $EUID -ne 0 ]] && die "This script much be ran as root!"
+}

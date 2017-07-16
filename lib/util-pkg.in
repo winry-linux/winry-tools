@@ -17,13 +17,13 @@
 #   You should have received a copy of the GNU General Public License
 #   along with Winry-Tools. If not, see <http://www.gnu.org/licenses/>.
 
-#Create a variable for the user's home directory
-load_user_info(){
-    OWNER=${SUDO_USER:-$USER}
+#Verify that the current directory has a PKGBUILD
+check_build() {
+    [[ ! -f PKGBUILD ]] && die "Directory must contain a PKGBUILD!"
+}
 
-    if [[ -n $SUDO_USER ]]; then
-        eval "USER_HOME=~$SUDO_USER"
-    else
-        USER_HOME=$HOME
-    fi
+ensure_dependencies() {
+    pacman -Qi devtools > /dev/null
+
+    [[ $? -ne 0 ]] && die "devtools is not installed!"
 }

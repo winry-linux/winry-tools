@@ -1,64 +1,136 @@
-#!/usr/bin/env bash
+#!/bin/bash
  
-#Make sure we're root
-if [[ $EUID -ne 0 ]]; then
-    echo "This must be ran as root"
-    exit 1
-fi
+#   This file is part of Winry-Tools - <http://github.com/winry-linux/winry-tools>
+#
+#   Copyright 2017, Joshua Strot <joshua@winrylinux.org>
+#
+#   Winry-Tools is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   Winry-Tools is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with Winry-Tools. If not, see <http://www.gnu.org/licenses/>.
 
-#Make sure there is a PKGBUILD present
-if [[ ! -f "PKGBUILD" ]]; then
-    echo "No PKGBUILD in this directory"
-    exit 1
-fi
+#To be replaced with Make
+LIBDIR='@libdir@'
 
-#Make sure there aren't more packages in the directory
-if [[ -f "*.xz" ]]; then
-    echo "Please do not use this tool with more than one package in the directory"
-    exit 1
-fi
+#Import the needed libraries
+source ${LIBDIR}/util
+source ${LIBDIR}/util-msg
+source ${LIBDIR}/util-pkg
 
-#make sure devtools is installed
-pacman -Qi devtools > /dev/null
-STATUS=$?
+#Ensure the environment is correct for this program to run
+check() {
+    #Make sure we're root
+    verify_root
 
-if [[ $STATUS -ne 0 ]]; then
-    echo "devtools is not installed"
-    exit 1
-fi
+    #make sure devtools is installed
+    ensure_dependencies
+}
+
+#Same as check, but also verify PKGBUILD present
+check2() {
+    check
     
-#Set the variable
-CHROOT="/var/cache/chroot"
+    #Make sure there is a PKGBUILD present
+    check_build
+}
+
+#Update the chroot
+update() {
+    CHROOT="/var/cache/chroot"
     
-#Create a chroot if not present
-if [[ ! -d $CHROOT ]]; then
-    echo "Setting up a chroot..."
+    [[ ! -d $CHROOT ]] && die "There is no current chroot set up."
     
-    #Make sure chroot directory is present
-    mkdir -p $CHROOT
-    
-    #Make a chroot
-    if [[ -f "$HOME/.makepkg.conf" ]]; then
-        mkarchroot -M "$HOME/.makepkg.conf" $CHROOT/root base-devel
+    msg "Now updating the chroot..."
+    arch-nspawn ${CHROOT}/root pacman -Syu --noconfirm
+}
+
+#Create the chroot
+create() {
+    if [[ ! -d $CHROOT ]]; then
+        CHROOT="/var/cache/chroot"
+        
+        msg "Setting up a new clean chroot..."
+        
+        mkdir -p $CHROOT
+        
+        #Build the chroot
+        if [[ -f "$USER_HOME/.makepkg.conf" ]]; then
+            msg2 "Detected custom makepkg.conf, using and copying over..."
+            mkarchroot -M "$USER_HOME/.makepkg.conf" $CHROOT/root base-devel winry-mirrorlist winry-keyring namcap
+            cp "$USER_HOME/.makepkg.conf" $CHROOT/root/etc/makepkg.conf
+            echo -e "[winry-testing]\nInclude = /etc/pacman.d/winry-mirrorlist" >> $CHROOT/root/etc/pacman.conf
+        else
+            mkarchroot $CHROOT/root base-devel winry-mirrorlist winry-keyring namcap
+            cp /etc/makepkg.conf $CHROOT/root/etc/makepkg.conf
+            echo -e "[winry-testing]\nInclude = /etc/pacman.d/winry-mirrorlist" >> $CHROOT/root/etc/pacman.conf
+        fi
     else
-        mkarchroot $CHROOT/root base-devel
+        die "No current chroot set up."
     fi
-fi
+}
 
-echo "Copying over makepkg.conf and pacman.conf"
-cp /etc/pacman.conf $CHROOT/root/etc/pacman.conf
-cp /etc/makepkg.conf $CHROOT/root/etc/makepkg.conf
+#Delete the chroot directory
+nuke() {
+    CHROOT="/var/cache/chroot"
+    if [[ -d $CHROOT ]]; then
+        msg "Nuking the chroot..."
+        rm -rf $CHROOT
+    else
+        die "No current chroot set up."
+    fi
+}
 
-#Build the package
-echo "Building package"
-makechrootpkg -c -u -r $CHROOT
+#Build a package in the chroot
+build() {
+    CHROOT="/var/cache/chroot"
+    if [[ ! -d $CHROOT ]]; then
+        msg "No chroot created, making one now..."
+        create
+    fi
+    
+    if ! /usr/bin/makechrootpkg -c -u -n -r "$CHROOT"; then
+        die "An error occurred while building the package."
+    fi
+}
 
-STATUS=$?
-
-if [[ $STATUS -ne 0 ]]; then
-    echo "Package did not build properly, exiting..."
-    exit 1
-fi
-
-#Woolah
-echo "Finished building package for winry testing"
+#Begin processing the command line argument
+case "$1" in
+    c) #Create new chroot
+        check
+        create
+        ;;
+    u) #Check for updates in chroot
+        check
+        update
+        ;;
+    n) #Delete the chroot
+        check
+        nuke
+        ;;
+    b) #Build a package in the chroot
+        check2
+        build
+        ;;
+    *) #Display the help if nothing else matches
+        header
+        echo -e "usage: winry-build-testing [-h]"
+        echo -e "                           [-c | -u | -d | -b ]"
+        echo -e ""
+        echo -e "Build a package in a clean chroot from Winry Linux"
+        echo -e ""
+        echo -e "optional arguments:"
+        echo -e "  -h\t\t\tDisplay this help menu and exit"
+        echo -e "  -c\t\t\tCreate the chroot"
+        echo -e "  -u\t\t\tUpdate the chroot"
+        echo -e "  -n\t\t\tNuke the chroot"
+        echo -e "  -b\t\t\tBuild the package in the clean chroot"
+        ;;
+esac

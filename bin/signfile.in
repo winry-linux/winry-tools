@@ -20,8 +20,20 @@
 #To be replaced with Make
 LIBDIR='@libdir@'
 
-#Import the util-msg library
-import ${LIBDIR}/util.sh
+#Import the needed libraries
+source ${LIBDIR}/util
+source ${LIBDIR}/util-msg
+
+#Display help, make sure needed variables are present
+if [[ $# -gt 0 ]]; then
+    if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+        header
+        echo "Sign a specific file with user defined gpg key"
+        cleanup 0
+    fi
+else
+    die "No file specified"
+fi
 
 #Load user's pacman directory, or home directory
 load_user_info
@@ -37,6 +49,6 @@ if [ ! -e "$1" ]; then
 fi
 
 #Sign key, remove old signature
-msg2 "Signing [%s] with key %s" "${1##*/}" "${GPGKEY}..."
+msg "Signing [%s] with key %s" "${1##*/}" "${GPGKEY}..."
 [[ -e "$1".sig ]] && rm "$1".sig
 gpg --detach-sign --use-agent -u "${GPGKEY}" "$1"
