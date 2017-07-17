@@ -30,6 +30,11 @@ Authors
 =======
 * Joshua Strot - joshua@winrylinux.org
 
+Credits
+=======
+* [graysky2](https://github.com/graysky2): [Clean Chroot Manager](https://github.com/graysky2/clean-chroot-manager)
+* [Manjaro](https://github.com/manjaro): [Manjaro Tools](https://github.com/manjaro/manjaro-tools)
+
 License
 =======
 This project is licensed under the GNU General Public License. See [LICENSE](LICENSE) for more details.
